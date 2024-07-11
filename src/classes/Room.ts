@@ -1,11 +1,13 @@
 interface Player {
     username: string;
+    userId: string;
     rating: number;
+    socketId: string | null;
+    testCasesPassed: number;
 }
 
 interface Submission {
-    playerId: string;
-    code: string;
+    userId: string;
     token: string;
 }
 
@@ -13,31 +15,13 @@ class Room {
     roomId: string;
     player1: Player;
     player2: Player;
-    submissions: Submission[] = [];
-    constructor() {
-        this.roomId = "room1";
-        this.player1 = { username: "player1", rating: 1000 };
-        this.player2 = { username: "player2", rating: 1000 };
-    }
+    submissions: Submission[];
 
-    addSubmission(playerId: string, token: string, code: string) {
-        this.submissions.push({
-            playerId,
-            token,
-            code,
-        });
-    }
-
-    getSubmission(playerId: string) {
-        return this.submissions.find(
-            (submission) => submission.playerId === playerId
-        );
-    }
-
-    removeSubmission(token: string) {
-        this.submissions = this.submissions.filter(
-            (submission) => submission.token !== token
-        );
+    constructor(player1: Player, player2: Player, roomId: string) {
+        this.player1 = player1;
+        this.player2 = player2;
+        this.roomId = roomId;
+        this.submissions = [];
     }
 }
 

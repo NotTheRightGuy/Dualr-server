@@ -44,11 +44,33 @@ io.on("connection", (socket) => {
                 socketIdOfUser.delete(key);
             }
         });
+        lookingForMatch.forEach(async (value, key) => {
+            if (value === socket.id) {
+                lookingForMatch.delete(key);
+                console.log(`${key} removed from match making queue`);
+            }
+
+            try {
+                const queueLength = await client.llen("finding");
+                for (let i = 0; i < queueLength; i++) {
+                    const user = await client.lindex("finding", i);
+                    const userData = JSON.parse(user as string);
+                    if (userData.id === key) {
+                        await client.lrem("finding", 1, user as string);
+                        console.log(
+                            `${userData.username} removed from Redis queue`
+                        );
+                        break;
+                    }
+                }
+            } catch (err) {
+                console.log("Error removing user from Redis queue:", err);
+            }
+        });
     });
 
     socket.on("find", async (data) => {
-        data = JSON.parse(data).user;
-        console.log(`User with username ${data.username} looking for a dual`);
+        console.log(`${data.username} looking for a dual`);
         lookingForMatch.set(data.id, socket.id);
         try {
             await client.lpush("finding", JSON.stringify(data));
@@ -71,8 +93,12 @@ async function startWorker() {
                 const user1 = JSON.parse(newFinders[0]);
                 const user2 = JSON.parse(newFinders[1]);
                 lookingForMatch.forEach((value, key) => {
-                    if (key == user1.id) io.to(value).emit("found", user2);
-                    if (key == user2.id) io.to(value).emit("found", user1);
+                    if (key == user1.id) {
+                        io.to(value).emit("found", user2);
+                    }
+                    if (key == user2.id) {
+                        io.to(value).emit("found", user1);
+                    }
                 });
                 console.log(
                     `${user1.username} found a dual with ${user2.username} | ${user1.rating} vs ${user2.rating}`
@@ -87,7 +113,7 @@ async function startWorker() {
 }
 
 app.get("/", (req, res) => {
-    res.send("Dualr Backend is running!");
+    res.send("Dualr Backend is running! Bhow");
 });
 
 httpServer.listen(PORT, async () => {

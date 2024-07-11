@@ -1,0 +1,8 @@
+FROM node:18
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY wait-for-it.sh run-migration.sh ./
+RUN chmod +x wait-for-it.sh run-migration.sh
+EXPOSE 8080
+CMD ["npm", "run", "dev"]
