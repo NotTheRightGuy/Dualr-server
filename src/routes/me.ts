@@ -3,6 +3,7 @@ import db from "../db";
 import { users } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { getTableColumns } from "drizzle-orm";
+import { onGoingDuals } from "..";
 
 const app = Router();
 
@@ -17,8 +18,19 @@ app.get("/", async (req, res) => {
         .from(users)
         .where(eq(users.email, email))
         .limit(1);
-
-    return res.json(user[0]);
+    const userId = user[0].id;
+    let inaDual: boolean = false;
+    onGoingDuals.forEach((room) => {
+        const userIdsOfMember = room.roomId.split("<sep>");
+        if (userId == userIdsOfMember[0] || userId == userIdsOfMember[1]) {
+            inaDual = true;
+        }
+    });
+    if (!inaDual) {
+        return res.json({ ...user[0], message: "No Ongoing Dual founds" });
+    } else {
+        return res.json({ ...user[0], message: "Already in Dual" });
+    }
 });
 
 export default app;

@@ -2,9 +2,9 @@ import { Router } from "express";
 import judge0server from "../utils/server";
 import callback_url from "../config";
 import { socketIdOfUser } from "../classes/socketIdOfUser";
+import { onGoingDuals } from "..";
 
 const app = Router();
-import onGoingSubmission from "../classes/onGoingSubmission";
 
 /*
  * @route POST /judge/submission
@@ -33,6 +33,7 @@ app.post("/submission/batch", (req, res) => {
     const toSend: any = {
         submissions: [],
     };
+
     req.body.submissions.forEach((subm: any) => {
         toSend.submissions.push({
             language_id: req.body.language_id,
@@ -40,12 +41,26 @@ app.post("/submission/batch", (req, res) => {
             callback_url,
         });
     });
+
+    const userId = req.body.user_id;
+
     judge0server.post("/submissions/batch", toSend).then((response) => {
         response.data.forEach((submission: any, index: number) => {
-            onGoingSubmission.set(submission.token, {
-                user_id: req.body.user_id,
-                socket_id: socketIdOfUser.get(req.body.user_id) as string,
-                test_case_number: index,
+            onGoingDuals.forEach((room) => {
+                const userId1ForRoom = room.roomId.split("<sep>")[0];
+                const userId2ForRoom = room.roomId.split("<sep>")[1];
+                if (userId1ForRoom == userId) {
+                    room.submissions.set(submission.token, {
+                        socket_id: room.player1.socketId as string,
+                        input_number: index,
+                    });
+                }
+                if (userId2ForRoom == userId) {
+                    room.submissions.set(submission.token, {
+                        socket_id: room.player2.socketId as string,
+                        input_number: index,
+                    });
+                }
             });
         });
         return res.json({
