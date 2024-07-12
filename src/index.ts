@@ -7,11 +7,11 @@ import routes from "./routes";
 import { socketIdOfUser } from "./classes/socketIdOfUser";
 import { lookingForMatch } from "./classes/lookingForMatch";
 import { Room, Player } from "./classes/Room";
-
 import fs from "fs";
 import createJSONFromMarkdown from "./utils/parseMD";
-
 import { client, makeRedisClient } from "./redis";
+import CheckAuth from "./middlware/auth";
+import loggerMiddleware from "./middlware/logger";
 
 dotenv.config();
 const app = express();
@@ -28,6 +28,7 @@ const PORT = 8080;
 
 //? Middleware
 
+app.use(loggerMiddleware);
 app.use(express.json());
 app.use(cors());
 
@@ -187,12 +188,14 @@ async function startWorker() {
                 const question = createJSONFromMarkdown(
                     `questions/${files[randomQuestion]}`
                 );
-
+                // TODO: Fair rating changes
                 const newRoom = new Room(
                     player1,
                     player2,
                     user1.id + "<sep>" + user2.id,
-                    question
+                    question,
+                    35,
+                    35
                 );
 
                 onGoingDuals.push(newRoom);

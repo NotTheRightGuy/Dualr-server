@@ -19,12 +19,16 @@ class Room {
     >;
     question: any; //TODO : Set proper type of question
     startTime: number;
+    player1Delta: number;
+    player2Delta: number;
 
     constructor(
         player1: Player,
         player2: Player,
         roomId: string,
-        questionSlug: any
+        questionSlug: any,
+        player1Delta: number,
+        player2Delta: number
     ) {
         this.player1 = player1;
         this.player2 = player2;
@@ -38,6 +42,8 @@ class Room {
         >();
         this.question = questionSlug;
         this.startTime = Date.now();
+        this.player1Delta = player1Delta;
+        this.player2Delta = player2Delta;
     }
 }
 

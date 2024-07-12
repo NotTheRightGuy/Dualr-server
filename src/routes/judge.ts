@@ -3,6 +3,7 @@ import judge0server from "../utils/server";
 import callback_url from "../config";
 import { socketIdOfUser } from "../classes/socketIdOfUser";
 import { onGoingDuals } from "..";
+import CheckAuth from "../middlware/auth";
 
 const app = Router();
 
@@ -13,7 +14,7 @@ const app = Router();
  * @body { user_id, language_id, source_code }
  * @return { message: "Submission received" }
  */
-app.post("/submission", (req, res) => {
+app.post("/submission", CheckAuth, (req, res) => {
     const { user_id, language_id, source_code } = req.body;
     judge0server
         .post("/submissions", { language_id, source_code, callback_url })
@@ -29,7 +30,7 @@ app.post("/submission", (req, res) => {
  * @return { message: "Batch Submissions received", tokens: [token] }
  */
 
-app.post("/submission/batch", (req, res) => {
+app.post("/submission/batch", CheckAuth, (req, res) => {
     const toSend: any = {
         submissions: [],
     };
