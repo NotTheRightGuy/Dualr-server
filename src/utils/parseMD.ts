@@ -40,28 +40,6 @@ function extractHeadingContent(markdownContent: string, headingName: string) {
     return content.join("\n").trim();
 }
 
-function parseExamples(exampleString: string) {
-    const examples: Example[] = [];
-    const exampleBlocks = exampleString.split(/\r\n\r\n/);
-
-    for (const block of exampleBlocks) {
-        const lines = block.split("\r\n");
-        if (lines.length < 3) continue;
-
-        const inputMatch = lines[0].split("input: ")[1];
-        const outputMatch = lines[1].split("output: ")[1];
-        const explanationMatch = lines[2].split("explanation: ")[1];
-
-        examples.push({
-            input: inputMatch,
-            output: outputMatch,
-            explanation: explanationMatch,
-        });
-    }
-
-    return examples;
-}
-
 function parseTestcases(testcaseString: string) {
     const testCases: Testcase[] = [];
     const testCasesBlock = testcaseString.split(/\r\n\r\n/);
@@ -106,6 +84,34 @@ function parseFunctionDetails(inputString: string): FunctionDetails {
     return result;
 }
 
+function getRandomProblemStatement(content: string): string {
+    const problemStatements = content.split("<sep>");
+    const randomIndex = Math.floor(Math.random() * problemStatements.length);
+    return problemStatements[randomIndex].trim();
+}
+
+function parseExamples(exampleString: string) {
+    const examples: Example[] = [];
+    const exampleBlocks = exampleString.split(/\r\n\r\n/);
+
+    for (const block of exampleBlocks) {
+        const lines = block.split("\r\n");
+        if (lines.length < 3) continue;
+
+        const inputMatch = lines[0].split("input: ")[1];
+        const outputMatch = lines[1].split("output: ")[1];
+        const explanationMatch = lines[2].split("explanation: ")[1];
+
+        examples.push({
+            input: inputMatch,
+            output: outputMatch,
+            explanation: explanationMatch,
+        });
+    }
+
+    return examples;
+}
+
 function createJSONFromMarkdown(filePath: string) {
     const fileContent = fs.readFileSync(filePath, "utf-8");
     const { data: metadata, content } = matter(fileContent);
@@ -113,7 +119,9 @@ function createJSONFromMarkdown(filePath: string) {
     const questionJSON = {
         slug: metadata.slug,
         question_name: metadata.question_name,
-        problem_statement: extractHeadingContent(content, "Problem Statement"),
+        problem_statement: getRandomProblemStatement(
+            extractHeadingContent(content, "Problem Statement")
+        ),
         function_signature: parseFunctionDetails(
             extractHeadingContent(content, "Function Signature")
         ),

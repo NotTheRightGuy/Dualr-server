@@ -1,27 +1,73 @@
 import winston from "winston";
 
-const logger = winston.createLogger({
+const authLogger = winston.createLogger({
     level: "info",
     format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.json()
     ),
-    defaultMeta: { service: "user-service" },
+    defaultMeta: { service: "auth-service" },
     transports: [
         new winston.transports.File({
-            filename: "logs/error.log",
+            filename: "logs/auth/error.log",
             level: "error",
         }),
-        new winston.transports.File({ filename: "logs/combined.log" }),
+        new winston.transports.File({ filename: "logs/auth/combined.log" }),
+    ],
+});
+
+const matchmakingLogger = winston.createLogger({
+    level: "info",
+    format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.json()
+    ),
+    defaultMeta: { service: "matchmaking-service" },
+    transports: [
+        new winston.transports.File({
+            filename: "logs/matchmaking/error.log",
+            level: "error",
+        }),
+        new winston.transports.File({
+            filename: "logs/matchmaking/combined.log",
+        }),
+    ],
+});
+
+const socketLogger = winston.createLogger({
+    level: "info",
+    format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.json()
+    ),
+    defaultMeta: { service: "socket-service" },
+    transports: [
+        new winston.transports.File({
+            filename: "logs/socket/error.log",
+            level: "error",
+        }),
+        new winston.transports.File({
+            filename: "logs/socket/combined.log",
+        }),
     ],
 });
 
 if (process.env.NODE_ENV !== "production") {
-    logger.add(
+    authLogger.add(
+        new winston.transports.Console({
+            format: winston.format.simple(),
+        })
+    );
+    matchmakingLogger.add(
+        new winston.transports.Console({
+            format: winston.format.simple(),
+        })
+    );
+    socketLogger.add(
         new winston.transports.Console({
             format: winston.format.simple(),
         })
     );
 }
 
-export default logger;
+export { authLogger, matchmakingLogger, socketLogger };
