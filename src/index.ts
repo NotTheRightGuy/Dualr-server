@@ -4,14 +4,12 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import dotenv from "dotenv";
 import routes from "./routes";
-import { socketIdOfUser } from "./classes/socketIdOfUser";
 import { lookingForMatch } from "./classes/lookingForMatch";
 import { Room, Player } from "./classes/Room";
 import fs from "fs";
 import createJSONFromMarkdown from "./utils/parseMD";
 import { client, makeRedisClient } from "./redis";
-import CheckAuth from "./middlware/auth";
-import loggerMiddleware from "./middlware/logger";
+import logger from "./logger";
 
 dotenv.config();
 const app = express();
@@ -26,39 +24,28 @@ const io = new Server(httpServer, {
 export { io };
 const PORT = 8080;
 
-//? Middleware
+//* Middleware
 
-app.use(loggerMiddleware);
 app.use(express.json());
 app.use(cors());
 
-//? Routes
+//* Routes
 app.use("/api", routes);
 
-//! REMOVE IN PRODUCTION
+// TODO: Move all in memory Data structures to redis queue
 export const onGoingDuals: Room[] = [];
 
-// TODO: Move all in memory Data structures to redis queue
-
-//? Socket.io
+//* Socket.io
 io.on("connection", (socket) => {
-    console.log(`User with socket id: ${socket.id} connected`);
     socket.on("joined", (data) => {
-        console.log(`User id with ${data} connected | Socket id: ${socket.id}`);
-        socketIdOfUser.set(data.id, socket.id);
+        logger.info(`User id with ${data} connected | Socket id: ${socket.id}`);
     });
 
     socket.on("disconnect", () => {
-        console.log(`A user disconnected with socket id: ${socket.id}`);
-        socketIdOfUser.forEach((value, key) => {
-            if (value === socket.id) {
-                socketIdOfUser.delete(key);
-            }
-        });
         lookingForMatch.forEach(async (value, key) => {
             if (value === socket.id) {
                 lookingForMatch.delete(key);
-                console.log(`${key} removed from match making queue`);
+                logger.info(`${key} removed from match making queue`);
             }
 
             try {
@@ -68,26 +55,27 @@ io.on("connection", (socket) => {
                     const userData = JSON.parse(user as string);
                     if (userData.id === key) {
                         await client.lrem("finding", 1, user as string);
-                        console.log(
-                            `${userData.username} removed from Redis queue`
+                        logger.info(
+                            `${userData.username} got disconnected and has been removed from matchmaking `
                         );
                         break;
                     }
                 }
             } catch (err) {
-                console.log("Error removing user from Redis queue:", err);
+                logger.error("Error removing user from Redis queue:", err);
             }
         });
     });
 
     socket.on("find", async (data) => {
-        console.log(`${data.username} looking for a dual`);
         lookingForMatch.set(data.id, socket.id);
         try {
             await client.lpush("finding", JSON.stringify(data));
-            console.log(data.username + " Added to queue");
+            logger.info(`${data.username} added to matchmaking queue`);
         } catch (err) {
-            console.log("Error pushing to queue");
+            logger.error(
+                `There was a problem pushing ${data.username} to matchmaking queue`
+            );
         }
     });
 
@@ -122,7 +110,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("end-dual", (data) => {
-        console.log(data + " requested to terminate his dual");
+        logger.info(data + " requested to terminate their dual");
         const userId = data;
         onGoingDuals.forEach((room, index) => {
             const [player1Id, player2Id] = room.roomId.split("<sep>");
@@ -158,8 +146,8 @@ async function startWorker() {
                         io.to(value).emit("found", user1);
                     }
                 });
-                console.log(
-                    `${user1.username} found a dual with ${user2.username} | ${user1.rating} vs ${user2.rating}`
+                logger.info(
+                    `${user1.username} - ${user1.rating} found a dual with ${user2.username} - ${user2.rating}`
                 );
 
                 //TODO : Check that this player is not present in any other rooms
@@ -204,17 +192,17 @@ async function startWorker() {
                 lookingForMatch.delete(user2.id);
             }
         } catch (err) {
-            console.log(err, "Error processing queue");
+            logger.error(err + " There was an error processing redis queue");
         }
     }
 }
 
 app.get("/", (req, res) => {
-    res.send("Dualr Backend is running! Bhow");
+    res.send("Dualr Backend is running!");
 });
 
 httpServer.listen(PORT, async () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`Started Express Server on port ${PORT}`);
     makeRedisClient();
     startWorker();
 });

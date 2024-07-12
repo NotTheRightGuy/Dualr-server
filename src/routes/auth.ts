@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import bcrypt from "bcrypt";
+import logger from "../logger";
 
 import db from "../db";
 import { users } from "../db/schema";
@@ -50,6 +51,7 @@ app.post("/signup", async (req, res) => {
                 password: hashedPassword,
             })
             .then(() => {
+                logger.info(`${body.data.email} created a new account`);
                 res.status(201).json({ message: "User created successfully!" });
             });
     } else {
@@ -65,6 +67,7 @@ app.post("/signup", async (req, res) => {
  * @response { user: object }
  */
 
+//TODO : Make this end point rate limited
 app.post("/login", async (req, res) => {
     const body = loginSchema.safeParse(req.body);
     if (body.success) {
@@ -83,9 +86,12 @@ app.post("/login", async (req, res) => {
             user.password
         );
         if (!passwordMatch) {
+            logger.info(
+                `${body.data.email} entered a wrong password while signing in`
+            );
             return res.status(400).json({ error: "Invalid credentials!" });
         }
-
+        logger.info(`${body.data.email} logged in!`);
         res.status(200).json({
             id: user.id,
             email: user.email,

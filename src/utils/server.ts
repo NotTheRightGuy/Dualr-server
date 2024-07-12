@@ -1,7 +1,8 @@
 import axios from "axios";
+import { judge0Url } from "../config";
 
 const judge0server = axios.create({
-    baseURL: "http://localhost:2358",
+    baseURL: judge0Url,
 });
 
 export default judge0server;

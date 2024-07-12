@@ -8,7 +8,7 @@ export function makeRedisClient() {
             host: process.env.REDIS_HOST as string,
             port: process.env.REDIS_PORT as unknown as number,
         });
-        console.log("Redis Client Created");
+        console.log("Connection with redis server established!");
     }
 }
 
